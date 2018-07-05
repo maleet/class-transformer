@@ -1,7 +1,8 @@
 import "reflect-metadata";
-import {serialize, deserialize, deserializeArray} from "../../src/index";
+import {serialize, deserialize, deserializeArray, plainToClass, classToPlain} from "../../src/index";
 import {defaultMetadataStorage} from "../../src/storage";
-import {Exclude} from "../../src/decorators";
+import {Exclude, Type, Transform} from "../../src/decorators";
+import {Guid, TypeGuid} from "./Guid";
 
 describe("serialization and deserialization objects", () => {
 
@@ -103,6 +104,54 @@ describe("serialization and deserialization objects", () => {
 
         result.should.be.instanceof(TestObject);
         result.prop.should.be.eql("Hi");
+        // We should strip, but it's a breaking change
+        // (<any>result).extra.should.be.undefined;
+    });
+
+
+    it("should successfully deserialize Guid", () => {
+        defaultMetadataStorage.clear();
+
+        class TestGrandParent {
+            @TypeGuid()
+                // @Transform(value => value.toString(), {toPlainOnly: true})
+                // @Transform(value => Guid.parse(value), {toClassOnly: true})
+            Status?: Guid;
+        }
+
+        class TestParent extends TestGrandParent {
+            @TypeGuid()
+                // @Transform(value => value.toString(), {toPlainOnly: true})
+                // @Transform(value => Guid.parse(value), {toClassOnly: true})
+            Statuses: Guid[];
+        }
+
+        class TestObject extends TestParent {
+            @TypeGuid()
+                // @Transform(value => value.toString(), {toPlainOnly: true})
+                // @Transform(value => Guid.parse(value), {toClassOnly: true})
+            Status2: Guid;
+        }
+
+        const payload = {
+            Status: "73002479-b697-4eb8-a6c3-52dfaedd9e9c",
+            Statuses: ["83002479-b697-4eb8-a6c3-52dfaedd9e9c", "93002479-b697-4eb8-a6c3-52dfaedd9e9c"]
+        };
+
+        const result = plainToClass(TestObject, payload);
+        const plain = classToPlain<TestObject>(result);
+        console.log(serialize<TestObject>(result));
+
+        result.should.be.instanceof(TestObject);
+        result.Status.should.be.eql(Guid.parse("73002479-b697-4eb8-a6c3-52dfaedd9e9c"));
+
+
+
+        plain.should.be.eql({
+            Status: payload.Status,
+            Statuses: ["83002479-b697-4eb8-a6c3-52dfaedd9e9c", "93002479-b697-4eb8-a6c3-52dfaedd9e9c"]
+        });
+
         // We should strip, but it's a breaking change
         // (<any>result).extra.should.be.undefined;
     });
