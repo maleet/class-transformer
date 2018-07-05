@@ -24,6 +24,8 @@
     "object-to-class",
     "typescript-serializer"
   ],
+  "main": "./build/package/index.js",
+  "typings": "./build/package/index.d.ts",
   "dependencies": {},
   "devDependencies": {
     "@types/chai": "^3.4.34",
